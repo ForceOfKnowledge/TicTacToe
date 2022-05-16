@@ -173,26 +173,32 @@ class Game:
         self.fred1 = threading.Thread(target=self.client.listen, args=(self.on_message,))
         self.fred1.start()
         time.sleep(1)
+   
+	#Returns, whether the game is done, or not 
+	def game_active(self):
+		for win_state in self.win_states:
+			cache = self.board.gameState[win_state]
+			if(cache == 0):
+				continue
+			
+			valid = True
+			for j in win_state:
+				if j != cache:
+					valid = False
+			if valid:
+				return False
+		
+		#Check for draw
+		counter = 0
+		for i in self.board.gameState:
+			if i != 0:
+				counter++
+		if counter == 9:
+			draw = True
+			return False
 
-    def game_active(self):
-        for win_state in self.win_states:
-            cache = self.board.gameState[win_state[0]]
-            if cache == 0:
-                continue
-            for i in win_state:
-                if cache != self.board.gameState[i]:
-                    break
+		return True
 
-            else:
-                draw = True
-                for j in self.board.gameState:
-                    if j != cache:
-                        draw = False
-
-                self.draw = draw
-                return False
-
-        return True
 
     def on_message(self, client, userdata, message):
         msg_string = message.payload.decode("utf-8")
