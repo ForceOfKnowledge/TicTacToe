@@ -10,9 +10,6 @@ from PyQt5.QtWidgets import QApplication, QPushButton, QToolTip, QLabel, QMainWi
 from mqtt_client import MqttClient
 
 
-
-
-
 class Board(QMainWindow):
     gameState = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     prefix = QFont("Z003", 16)
@@ -81,20 +78,22 @@ class Board(QMainWindow):
         self.reset_button.setGeometry(self.reset_button_pos_x, self.reset_button_pos_y, 80, 30)
         self.reset_button.setEnabled(False)
         self.reset_button.setToolTip("Reset Game")
-        #self.reset_button.clicked.connect(self.reset)
+        # self.reset_button.clicked.connect(self.reset)
         self.reset_button.setIcon(QIcon("rsc/reset_button.jpeg"))
 
     def init_labels(self):
         QToolTip.setFont(self.prefix)
 
         self.winner_text = QLabel("", self)
-        self.winner_text.setGeometry(self.winner_text_pos_x, self.default_button_pos_y + self.winner_text_pos_y, 200, 30)
+        self.winner_text.setGeometry(self.winner_text_pos_x, self.default_button_pos_y + self.winner_text_pos_y, 200,
+                                     30)
         self.winner_text.setStyleSheet("color: rgb(0, 255, 0)")
         self.winner_text.setFont(self.prefix)
         self.winner_text.hide()
 
         self.active_player_text = QLabel("Active Player", self)
-        self.active_player_text.setGeometry(self.active_player_text_pos_x, self.default_button_pos_y + self.active_player_text_pos_y, 200, 30)
+        self.active_player_text.setGeometry(self.active_player_text_pos_x,
+                                            self.default_button_pos_y + self.active_player_text_pos_y, 200, 30)
         self.active_player_text.setFont(self.prefix)
         self.active_player_text.setToolTip("Current player")
         self.active_player_text.show()
@@ -139,6 +138,8 @@ class Player:
 
 class Game:
     draw = False
+    my_player_number = None
+    my_click = False
     win_states = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 4, 8], [2, 4, 6], [0, 3, 6], [1, 4, 7], [2, 5, 8]]
 
     topic = "banana/tictactoe"
@@ -159,7 +160,7 @@ class Game:
         self.symbol2 = QIcon(QPixmap("rsc/symbol2.png"))
 
         for button in self.board.buttons:
-            #button.clicked.connect(self.on_click)
+            # button.clicked.connect(self.on_click)
             button.clicked.connect(self.send_turn)
 
         self.players = [Player(1, self.symbol1), Player(2, self.symbol2)]
@@ -173,44 +174,43 @@ class Game:
         self.fred1 = threading.Thread(target=self.client.listen, args=(self.on_message,))
         self.fred1.start()
         time.sleep(1)
-   
-	#Returns, whether the game is done, or not 
-	def game_active(self):
-		for win_state in self.win_states:
-			cache = self.board.gameState[win_state]
-			if(cache == 0):
-				continue
-			
-			valid = True
-			for j in win_state:
-				if j != cache:
-					valid = False
-			if valid:
-				return False
-		
-		#Check for draw
-		counter = 0
-		for i in self.board.gameState:
-			if i != 0:
-				counter++
-		if counter == 9:
-			draw = True
-			return False
 
-		return True
+    # Returns, whether the game is done, or not
+    def game_active(self):
+        for win_state in self.win_states:
+            cache = self.board.gameState[win_state[0]]
+            if cache == 0:
+                continue
 
+            valid = True
+            for j in win_state:
+                if self.board.gameState[j] != cache:
+                    valid = False
+            if valid:
+                return False
+
+        # Check for draw
+        counter = 0
+        for i in self.board.gameState:
+            if i != 0:
+                counter += 1
+        if counter == 9:
+            self.draw = True
+            return False
+
+        return True
 
     def on_message(self, client, userdata, message):
         msg_string = message.payload.decode("utf-8")
         print("---Message received---")
         print("Message: " + msg_string)
 
-        if(msg_string == "reset"):
+        if (msg_string == "reset"):
             print("State: Valid Reset Command")
             print("Resetting... \n")
             self.board.reset()
-        elif(msg_string.isdigit()):
-            if(range(0, 9).__contains__(int(msg_string))):
+        elif (msg_string.isdigit()):
+            if (range(0, 9).__contains__(int(msg_string))):
                 print("State: Valid Format")
                 print("Executing Move... \n")
                 self.on_click(self.board.buttons[int(msg_string)])
@@ -224,15 +224,27 @@ class Game:
 
     def send_turn(self):
         sender = self.board.sender()
+        self.my_click = True
 
-        if(self.board.reset_button == sender):
+        if (self.board.reset_button == sender):
             self.client.send_message("reset")
         else:
             index = self.board.buttons.index(sender)
             self.client.send_message(str(index))
 
     def on_click(self, sender):
-        #button = self.board.sender()
+        # button = self.board.sender()
+
+        if self.my_click:
+            print("DEEEEEEEEEEEEEEBBBBBBBBBBBBBBBBBBBUUUUUUUUUUUUUUUUUUUUUUUUGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+            if self.my_player_number == None:
+                self.my_player_number = self.active_player
+
+            if self.my_player_number != self.active_player:
+                self.my_click = False
+                return
+        self.my_click = False
+
         button = sender
         self.board.error_text.hide()
         QToolTip.setFont(self.board.prefix)
@@ -261,7 +273,7 @@ class Game:
                         self.board.active_player_text.hide()
                     self.board.winner_text.show()
                     self.board.reset_button.setEnabled(True)
-                    self.draw = 0
+                    self.draw = False
                     self.active_player = self.players[random.randint(0, 1)]
                     return
 
@@ -283,3 +295,4 @@ if __name__ == "__main__":
     game = Game()
 
     sys.exit(app.exec_())
+
