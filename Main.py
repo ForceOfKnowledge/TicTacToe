@@ -85,7 +85,7 @@ class Board(QMainWindow):
         QToolTip.setFont(self.prefix)
 
         self.winner_text = QLabel("", self)
-        self.winner_text.setGeometry(self.winner_text_pos_x, self.default_button_pos_y + self.winner_text_pos_y, 200,
+        self.winner_text.setGeometry(self.winner_text_pos_x, self.default_button_pos_y + self.winner_text_pos_y, 250,
                                      30)
         self.winner_text.setStyleSheet("color: rgb(0, 255, 0)")
         self.winner_text.setFont(self.prefix)
@@ -229,6 +229,15 @@ class Game:
         if (self.board.reset_button == sender):
             self.client.send_message("reset")
         else:
+
+            if self.my_click:
+                if self.my_player_number == None:
+                    self.my_player_number = self.active_player
+
+                if self.my_player_number != self.active_player:
+                    self.my_click = False
+                    return
+
             index = self.board.buttons.index(sender)
             self.client.send_message(str(index))
 
@@ -236,7 +245,6 @@ class Game:
         # button = self.board.sender()
 
         if self.my_click:
-            print("DEEEEEEEEEEEEEEBBBBBBBBBBBBBBBBBBBUUUUUUUUUUUUUUUUUUUUUUUUGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
             if self.my_player_number == None:
                 self.my_player_number = self.active_player
 
@@ -274,7 +282,8 @@ class Game:
                     self.board.winner_text.show()
                     self.board.reset_button.setEnabled(True)
                     self.draw = False
-                    self.active_player = self.players[random.randint(0, 1)]
+                    #self.active_player = self.players[random.randint(0, 1)]
+                    self.active_player = self.players[0]
                     return
 
         else:
